@@ -8,7 +8,7 @@ import UpdateMetadata from "./pages/UpdateMetadata";
 import RoyaltyInfo from "./pages/RoyaltyInfo";
 import TransferNFT from "./pages/TransferNFT";
 import ApprovalManager from "./pages/ApprovalManager";
-
+import MyCollection from "./pages/MyCollection";
 import TypingTitle from "./components/TypingTitle";
 
 import "./App.css";
@@ -33,14 +33,41 @@ function App() {
           </div>
 
           <nav className="nav-menu">
-            <NavLink to="/" end>Mint NFT</NavLink>
-            <NavLink to="/search">Search NFT</NavLink>
-            <NavLink to="/verify">Verify Audio</NavLink>
-            <NavLink to="/fingerprint">Audio Fingerprint</NavLink>
-            <NavLink to="/royalty">Royalty Info</NavLink>
-            <NavLink to="/transfer">Transfer Ownership</NavLink>
-            <NavLink to="/approval">Approval Manager</NavLink>
-            <NavLink to="/update">Update Metadata</NavLink>
+            <NavLink to="/" end>
+              Mint NFT
+            </NavLink>
+
+            <NavLink to="/search">
+              Search NFT
+            </NavLink>
+
+            <NavLink to="/collection">
+              My Collection
+            </NavLink>
+
+            <NavLink to="/verify">
+              Verify Audio
+            </NavLink>
+
+            <NavLink to="/fingerprint">
+              Audio Fingerprint
+            </NavLink>
+
+            <NavLink to="/royalty">
+              Royalty Info
+            </NavLink>
+
+            <NavLink to="/transfer">
+              Transfer Ownership
+            </NavLink>
+
+            <NavLink to="/approval">
+              Approval Manager
+            </NavLink>
+
+            <NavLink to="/update">
+              Update Metadata
+            </NavLink>
           </nav>
 
           <div className="sidebar-note">
@@ -52,7 +79,7 @@ function App() {
             <p>
               C: Hash only
               <br />
-              I: SHA256 + Fingerprint
+              I: SHA-256 + Fingerprint
               <br />
               A: Blockchain storage
             </p>
@@ -62,7 +89,9 @@ function App() {
         <main className="main-area">
           <section className="hero hero-web3">
             <div className="hero-left">
-              <span className="pill">Blockchain Music Registry</span>
+              <span className="pill">
+                Blockchain Music Registry
+              </span>
 
               <TypingTitle />
 
@@ -77,8 +106,8 @@ function App() {
                   Mint NFT
                 </NavLink>
 
-                <NavLink to="/verify" className="hero-btn secondary">
-                  Verify Audio
+                <NavLink to="/collection" className="hero-btn secondary">
+                  My Collection
                 </NavLink>
               </div>
             </div>
@@ -124,6 +153,7 @@ function App() {
             <Routes>
               <Route path="/" element={<MintMusic />} />
               <Route path="/search" element={<SearchNFT />} />
+              <Route path="/collection" element={<MyCollection />} />
               <Route path="/verify" element={<VerifyAudio />} />
               <Route path="/fingerprint" element={<VerifyFingerprint />} />
               <Route path="/royalty" element={<RoyaltyInfo />} />
