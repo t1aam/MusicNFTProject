@@ -1,23 +1,32 @@
 import { useState } from "react";
 import { getContractReadOnly } from "../services/contract";
 
-function MyCollection() {
-  const [account, setAccount] = useState("");
+function MyCollection({ account, connectWallet }) {
   const [nfts, setNfts] = useState([]);
   const [status, setStatus] = useState("");
+  const [prices, setPrices] = useState({});
 
-  async function connectWallet() {
-    if (!window.ethereum) {
-      setStatus("Chưa cài MetaMask.");
+  function getSavedPrice(tokenId) {
+    return localStorage.getItem(`nft_price_${tokenId}`) || "";
+  }
+
+  function handlePriceChange(tokenId, value) {
+    setPrices((prev) => ({
+      ...prev,
+      [tokenId]: value,
+    }));
+  }
+
+  function savePrice(tokenId) {
+    const price = prices[tokenId] ?? getSavedPrice(tokenId);
+
+    if (!price || Number(price) <= 0) {
+      setStatus("Vui lòng nhập giá hợp lệ.");
       return;
     }
 
-    const accounts = await window.ethereum.request({
-      method: "eth_requestAccounts",
-    });
-
-    setAccount(accounts[0]);
-    setStatus("Đã kết nối ví. Bấm Load My NFTs để xem tài sản.");
+    localStorage.setItem(`nft_price_${tokenId}`, price);
+    setStatus(`Đã lưu giá cho Token #${tokenId}: ${price} ETH.`);
   }
 
   async function loadMyNFTs() {
@@ -42,7 +51,6 @@ function MyCollection() {
       for (const log of transferLogs) {
         const tokenId = log.args.tokenId.toString();
         const to = log.args.to;
-
         latestOwnerByToken.set(tokenId, to);
       }
 
@@ -71,6 +79,7 @@ function MyCollection() {
             licenseType: Number(info.licenseType),
             createdAt: Number(info.createdAt),
             tokenURI,
+            savedPrice: getSavedPrice(tokenId),
           });
         } catch (error) {
           console.error("Cannot load token", tokenId, error);
@@ -124,43 +133,78 @@ function MyCollection() {
 
       {nfts.length > 0 && (
         <div className="collection-grid">
-          {nfts.map((nft) => (
-            <div className="collection-card" key={nft.tokenId}>
-              <div className="collection-art">♪</div>
+          {nfts.map((nft) => {
+            const currentPrice =
+              prices[nft.tokenId] ?? getSavedPrice(nft.tokenId);
 
-              <div>
-                <p className="section-label">Token #{nft.tokenId}</p>
-                <h3>{nft.title}</h3>
-                <p className="muted">{nft.artist}</p>
+            return (
+              <div className="collection-card" key={nft.tokenId}>
+                <div className="collection-art">♪</div>
 
-                <div className="info-grid">
-                  <div>
-                    <span>Creator</span>
-                    <p>{nft.creator}</p>
+                <div className="collection-content">
+                  <div className="collection-top">
+                    <div>
+                      <p className="section-label">Token #{nft.tokenId}</p>
+                      <h3>{nft.title}</h3>
+                      <p className="muted">{nft.artist}</p>
+                    </div>
+
+                    <div className="price-box">
+                      <span>Định giá</span>
+                      <div className="price-input-row">
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.001"
+                          placeholder="ETH"
+                          value={currentPrice}
+                          onChange={(e) =>
+                            handlePriceChange(nft.tokenId, e.target.value)
+                          }
+                        />
+                        <button
+                          className="price-btn"
+                          onClick={() => savePrice(nft.tokenId)}
+                        >
+                          Lưu
+                        </button>
+                      </div>
+
+                      {currentPrice && (
+                        <strong>{currentPrice} ETH</strong>
+                      )}
+                    </div>
                   </div>
 
-                  <div>
-                    <span>Metadata URL</span>
-                    <p>
-                      <a href={nft.tokenURI} target="_blank" rel="noreferrer">
-                        {nft.tokenURI}
-                      </a>
-                    </p>
-                  </div>
+                  <div className="info-grid">
+                    <div>
+                      <span>Creator</span>
+                      <p>{nft.creator}</p>
+                    </div>
 
-                  <div>
-                    <span>Audio Hash</span>
-                    <p>{nft.audioHash}</p>
-                  </div>
+                    <div>
+                      <span>Metadata URL</span>
+                      <p>
+                        <a href={nft.tokenURI} target="_blank" rel="noreferrer">
+                          {nft.tokenURI}
+                        </a>
+                      </p>
+                    </div>
 
-                  <div>
-                    <span>Rights Hash</span>
-                    <p>{nft.rightsHash}</p>
+                    <div>
+                      <span>Audio Hash</span>
+                      <p>{nft.audioHash}</p>
+                    </div>
+
+                    <div>
+                      <span>Rights Hash</span>
+                      <p>{nft.rightsHash}</p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

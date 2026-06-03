@@ -1,10 +1,10 @@
+import { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route, NavLink } from "react-router-dom";
 
 import MintMusic from "./pages/MintMusic";
 import SearchNFT from "./pages/SearchNFT";
 import VerifyAudio from "./pages/VerifyAudio";
 import VerifyFingerprint from "./pages/VerifyFingerprint";
-import UpdateMetadata from "./pages/UpdateMetadata";
 import RoyaltyInfo from "./pages/RoyaltyInfo";
 import TransferNFT from "./pages/TransferNFT";
 import ApprovalManager from "./pages/ApprovalManager";
@@ -14,6 +14,60 @@ import TypingTitle from "./components/TypingTitle";
 import "./App.css";
 
 function App() {
+  const [account, setAccount] = useState("");
+  const [walletStatus, setWalletStatus] = useState("");
+
+  async function connectWallet() {
+    try {
+      if (!window.ethereum) {
+        setWalletStatus("Chưa cài MetaMask.");
+        return;
+      }
+
+      const accounts = await window.ethereum.request({
+        method: "eth_requestAccounts",
+      });
+
+      setAccount(accounts[0]);
+      setWalletStatus("Đã kết nối ví MetaMask.");
+    } catch (error) {
+      console.error(error);
+      setWalletStatus("Không thể kết nối ví MetaMask.");
+    }
+  }
+
+  useEffect(() => {
+    async function checkConnectedWallet() {
+      if (!window.ethereum) return;
+
+      const accounts = await window.ethereum.request({
+        method: "eth_accounts",
+      });
+
+      if (accounts.length > 0) {
+        setAccount(accounts[0]);
+      }
+    }
+
+    checkConnectedWallet();
+
+    if (window.ethereum) {
+      window.ethereum.on("accountsChanged", (accounts) => {
+        setAccount(accounts[0] || "");
+      });
+
+      window.ethereum.on("chainChanged", () => {
+        window.location.reload();
+      });
+    }
+  }, []);
+
+  const walletProps = {
+    account,
+    connectWallet,
+    walletStatus,
+  };
+
   return (
     <BrowserRouter>
       <div className="animated-bg">
@@ -32,42 +86,28 @@ function App() {
             </div>
           </div>
 
+          {account && (
+            <div className="wallet-card">
+              <span>Wallet Connected</span>
+              <p>{account}</p>
+            </div>
+          )}
+
+          {!account && (
+            <button className="wallet-btn" onClick={connectWallet}>
+              Connect Wallet
+            </button>
+          )}
+
           <nav className="nav-menu">
-            <NavLink to="/" end>
-              Mint NFT
-            </NavLink>
-
-            <NavLink to="/search">
-              Search NFT
-            </NavLink>
-
-            <NavLink to="/collection">
-              My Collection
-            </NavLink>
-
-            <NavLink to="/verify">
-              Verify Audio
-            </NavLink>
-
-            <NavLink to="/fingerprint">
-              Audio Fingerprint
-            </NavLink>
-
-            <NavLink to="/royalty">
-              Royalty Info
-            </NavLink>
-
-            <NavLink to="/transfer">
-              Transfer Ownership
-            </NavLink>
-
-            <NavLink to="/approval">
-              Approval Manager
-            </NavLink>
-
-            <NavLink to="/update">
-              Update Metadata
-            </NavLink>
+            <NavLink to="/" end>Mint NFT</NavLink>
+            <NavLink to="/search">Search NFT</NavLink>
+            <NavLink to="/collection">My Collection</NavLink>
+            <NavLink to="/verify">Verify Audio</NavLink>
+            <NavLink to="/fingerprint">Audio Fingerprint</NavLink>
+            <NavLink to="/royalty">Royalty Info</NavLink>
+            <NavLink to="/transfer">Transfer Ownership</NavLink>
+            <NavLink to="/approval">Approval Manager</NavLink>
           </nav>
 
           <div className="sidebar-note">
@@ -89,9 +129,7 @@ function App() {
         <main className="main-area">
           <section className="hero hero-web3">
             <div className="hero-left">
-              <span className="pill">
-                Blockchain Music Registry
-              </span>
+              <span className="pill">Blockchain Music Registry</span>
 
               <TypingTitle />
 
@@ -151,15 +189,14 @@ function App() {
 
           <section className="page-card glass-panel">
             <Routes>
-              <Route path="/" element={<MintMusic />} />
-              <Route path="/search" element={<SearchNFT />} />
-              <Route path="/collection" element={<MyCollection />} />
-              <Route path="/verify" element={<VerifyAudio />} />
-              <Route path="/fingerprint" element={<VerifyFingerprint />} />
-              <Route path="/royalty" element={<RoyaltyInfo />} />
-              <Route path="/transfer" element={<TransferNFT />} />
-              <Route path="/approval" element={<ApprovalManager />} />
-              <Route path="/update" element={<UpdateMetadata />} />
+              <Route path="/" element={<MintMusic {...walletProps} />} />
+              <Route path="/search" element={<SearchNFT {...walletProps} />} />
+              <Route path="/collection" element={<MyCollection {...walletProps} />} />
+              <Route path="/verify" element={<VerifyAudio {...walletProps} />} />
+              <Route path="/fingerprint" element={<VerifyFingerprint {...walletProps} />} />
+              <Route path="/royalty" element={<RoyaltyInfo {...walletProps} />} />
+              <Route path="/transfer" element={<TransferNFT {...walletProps} />} />
+              <Route path="/approval" element={<ApprovalManager {...walletProps} />} />
             </Routes>
           </section>
         </main>
