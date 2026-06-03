@@ -9,34 +9,6 @@ function TransferNFT({ account, connectWallet }) {
   const [status, setStatus] = useState("");
   const [history, setHistory] = useState([]);
 
-  const testCases = [
-    {
-      title: "TC01 - Transfer hợp lệ",
-      input: "Token ID thuộc ví đang connect, To Address là ví hợp lệ khác",
-      expected: "NFT được chuyển sang ví nhận, ownerOf(tokenId) đổi sang ví mới.",
-    },
-    {
-      title: "TC02 - Ví hiện tại không phải owner",
-      input: "Token ID thuộc ví khác",
-      expected: "Hệ thống chặn giao dịch và báo ví hiện tại không phải owner.",
-    },
-    {
-      title: "TC03 - Sai địa chỉ ví nhận",
-      input: "To Address không đúng định dạng 0x...",
-      expected: "Hệ thống báo địa chỉ nhận không hợp lệ, không gửi transaction.",
-    },
-    {
-      title: "TC04 - Token ID không tồn tại",
-      input: "Nhập Token ID chưa từng mint",
-      expected: "Không lấy được owner, giao dịch transfer không được thực hiện.",
-    },
-    {
-      title: "TC05 - Chuyển cho chính mình",
-      input: "To Address trùng với ví đang connect",
-      expected: "Hệ thống cảnh báo không nên chuyển NFT cho chính ví hiện tại.",
-    },
-  ];
-
   async function loadOwner() {
     try {
       if (!tokenId) {
@@ -50,16 +22,14 @@ function TransferNFT({ account, connectWallet }) {
       setCurrentOwner(owner);
 
       if (account && owner.toLowerCase() === account.toLowerCase()) {
-        setStatus("Đã lấy owner hiện tại. Ví đang connect là owner của NFT này.");
+        setStatus("Token này đang thuộc ví đang connect.");
       } else {
-        setStatus(
-          `Đã lấy owner hiện tại. Ví đang connect không phải owner. Owner: ${owner}`
-        );
+        setStatus(`Owner hiện tại của Token #${tokenId}: ${owner}`);
       }
     } catch (error) {
       console.error(error);
       setCurrentOwner("");
-      setStatus("Không lấy được owner. Token ID có thể không tồn tại.");
+      setStatus("Token ID không tồn tại hoặc không lấy được owner.");
     }
   }
 
@@ -76,12 +46,12 @@ function TransferNFT({ account, connectWallet }) {
       }
 
       if (!ethers.isAddress(to)) {
-        setStatus("Địa chỉ nhận không hợp lệ.");
+        setStatus("Địa chỉ ví nhận không hợp lệ.");
         return;
       }
 
       if (to.toLowerCase() === account.toLowerCase()) {
-        setStatus("Ví nhận đang trùng với ví hiện tại. Vui lòng nhập ví khác.");
+        setStatus("Không thể chuyển NFT cho chính ví đang connect.");
         return;
       }
 
@@ -99,7 +69,7 @@ function TransferNFT({ account, connectWallet }) {
         return;
       }
 
-      setStatus("Đang chuyển quyền sở hữu NFT...");
+      setStatus("Đang gửi giao dịch transfer lên Sepolia...");
 
       const tx = await contract.transferFrom(
         account,
@@ -112,15 +82,13 @@ function TransferNFT({ account, connectWallet }) {
       const newOwner = await contract.ownerOf(BigInt(tokenId));
       setCurrentOwner(newOwner);
 
-      setStatus(
-        `Chuyển quyền sở hữu thành công. Owner mới: ${newOwner}`
-      );
+      setStatus(`Transfer thành công. Owner mới: ${newOwner}`);
 
       await loadTransferHistory();
     } catch (error) {
       console.error(error);
       setStatus(
-        "Transfer thất bại. Kiểm tra Token ID, ví nhận hoặc quyền sở hữu NFT."
+        "Transfer thất bại. Kiểm tra Token ID, ví nhận, quyền sở hữu hoặc MetaMask."
       );
     }
   }
@@ -132,7 +100,7 @@ function TransferNFT({ account, connectWallet }) {
         return;
       }
 
-      setStatus("Đang tải lịch sử giao dịch Transfer của ví...");
+      setStatus("Đang tải lịch sử Transfer của ví đang connect...");
 
       const contract = await getContract();
 
@@ -145,10 +113,10 @@ function TransferNFT({ account, connectWallet }) {
       const relatedLogs = logs
         .filter((log) => {
           const from = log.args.from.toLowerCase();
-          const to = log.args.to.toLowerCase();
+          const receiver = log.args.to.toLowerCase();
           const wallet = account.toLowerCase();
 
-          return from === wallet || to === wallet;
+          return from === wallet || receiver === wallet;
         })
         .map((log) => ({
           tokenId: log.args.tokenId.toString(),
@@ -160,8 +128,7 @@ function TransferNFT({ account, connectWallet }) {
         .reverse();
 
       setHistory(relatedLogs);
-
-      setStatus(`Tìm thấy ${relatedLogs.length} giao dịch Transfer liên quan đến ví này.`);
+      setStatus(`Tìm thấy ${relatedLogs.length} giao dịch Transfer của ví này.`);
     } catch (error) {
       console.error(error);
       setStatus("Không tải được lịch sử Transfer.");
@@ -246,31 +213,16 @@ function TransferNFT({ account, connectWallet }) {
         </div>
       </div>
 
-      <div className="testcase-box">
-        <h3>Test case đề xuất cho màn Transfer</h3>
-
-        <div className="testcase-grid">
-          {testCases.map((tc) => (
-            <div className="testcase-card" key={tc.title}>
-              <strong>{tc.title}</strong>
-              <p>
-                <b>Input:</b> {tc.input}
-              </p>
-              <p>
-                <b>Kết quả mong đợi:</b> {tc.expected}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {history.length > 0 && (
         <div className="history-box">
           <h3>Lịch sử Transfer của ví</h3>
 
           <div className="history-list">
             {history.map((item) => (
-              <div className="history-card" key={`${item.txHash}-${item.tokenId}`}>
+              <div
+                className="history-card"
+                key={`${item.txHash}-${item.tokenId}`}
+              >
                 <p>
                   <b>Token:</b> #{item.tokenId}
                 </p>
